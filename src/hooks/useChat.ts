@@ -252,11 +252,13 @@ export async function createConversation(currentUserId: string, otherUserId: str
 
   if (error) throw error;
 
-  // Add both members
-  await supabase.from("conversation_members").insert([
-    { conversation_id: conv.id, user_id: currentUserId },
-    { conversation_id: conv.id, user_id: otherUserId },
-  ]);
+  // Add current user first, then other user
+  await supabase.from("conversation_members").insert({
+    conversation_id: conv.id, user_id: currentUserId,
+  });
+  await supabase.from("conversation_members").insert({
+    conversation_id: conv.id, user_id: otherUserId,
+  });
 
   return conv.id;
 }
