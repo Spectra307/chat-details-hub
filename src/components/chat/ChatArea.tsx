@@ -208,6 +208,7 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
           conversationName={conversationName}
           isGroup={isGroup}
           members={isGroup ? members : members.filter((m) => m.user_id !== user?.id)}
+          otherUserEmail={!isGroup ? members.find((m) => m.user_id !== user?.id)?.email || undefined : undefined}
           onClose={() => setShowInfo(false)}
         />
       )}
