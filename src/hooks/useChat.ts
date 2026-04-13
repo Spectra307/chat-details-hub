@@ -10,6 +10,7 @@ export interface Profile {
   avatar_url: string | null;
   status: string | null;
   last_seen: string | null;
+  email: string | null;
 }
 
 export interface Conversation {
