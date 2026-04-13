@@ -4,11 +4,13 @@ import { useMessages, sendMessage, Message, Profile } from "@/hooks/useChat";
 import { Send, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import ConversationInfoPanel from "./ConversationInfoPanel";
 
 interface ChatAreaProps {
   conversationId: string | null;
   conversationName: string;
   isGroup: boolean;
+  members?: Profile[];
 }
 
 function formatMessageTime(dateStr: string): string {
@@ -33,11 +35,12 @@ function shouldShowDateDivider(messages: Message[], index: number): boolean {
   return curr !== prev;
 }
 
-export default function ChatArea({ conversationId, conversationName, isGroup }: ChatAreaProps) {
+export default function ChatArea({ conversationId, conversationName, isGroup, members = [] }: ChatAreaProps) {
   const { user } = useAuth();
   const { messages, loading } = useMessages(conversationId);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -82,9 +85,13 @@ export default function ChatArea({ conversationId, conversationName, isGroup }: 
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-background">
+    <div className="flex flex-1 bg-background">
+      <div className="flex flex-1 flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b px-6 py-4">
+      <div
+        className="flex items-center gap-3 border-b px-6 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
+        onClick={() => setShowInfo((v) => !v)}
+      >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
           {conversationName.charAt(0).toUpperCase()}
         </div>
@@ -171,6 +178,17 @@ export default function ChatArea({ conversationId, conversationName, isGroup }: 
           </Button>
         </div>
       </div>
+      </div>
+      </div>
+
+      {showInfo && (
+        <ConversationInfoPanel
+          conversationName={conversationName}
+          isGroup={isGroup}
+          members={isGroup ? members : members.filter((m) => m.user_id !== user?.id)}
+          onClose={() => setShowInfo(false)}
+        />
+      )}
     </div>
   );
 }

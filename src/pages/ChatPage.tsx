@@ -29,6 +29,7 @@ export default function ChatPage() {
         conversationId={selectedConversation}
         conversationName={getConversationName()}
         isGroup={selectedConv?.is_group || false}
+        members={selectedConv?.members || []}
       />
     </div>
   );
