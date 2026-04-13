@@ -6,6 +6,7 @@ interface ConversationInfoPanelProps {
   conversationName: string;
   isGroup: boolean;
   members: Profile[];
+  otherUserEmail?: string;
   onClose: () => void;
 }
 
@@ -13,6 +14,7 @@ export default function ConversationInfoPanel({
   conversationName,
   isGroup,
   members,
+  otherUserEmail,
   onClose,
 }: ConversationInfoPanelProps) {
   return (
@@ -92,9 +94,9 @@ export default function ConversationInfoPanel({
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Username</p>
+                  <p className="text-xs text-muted-foreground">Email</p>
                   <p className="text-sm font-medium text-foreground">
-                    {members[0].username}
+                    {otherUserEmail || "Not available"}
                   </p>
                 </div>
               </div>
