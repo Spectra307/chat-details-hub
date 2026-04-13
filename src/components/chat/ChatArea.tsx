@@ -179,7 +179,6 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         </div>
       </div>
       </div>
-      </div>
 
       {showInfo && (
         <ConversationInfoPanel
