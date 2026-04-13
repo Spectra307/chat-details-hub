@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages, sendMessage, Message, Profile } from "@/hooks/useChat";
-import { Send, Smile } from "lucide-react";
+import { Send, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useReadReceipts } from "@/hooks/useReadReceipts";
 import ConversationInfoPanel from "./ConversationInfoPanel";
 
 interface ChatAreaProps {
@@ -46,6 +47,20 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const { typingUsers, handleTyping, stopTyping } = useTypingIndicator(conversationId);
+
+  const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
+  const { markAsRead, isRead } = useReadReceipts(conversationId, messageIds);
+
+  // Mark incoming messages as read when they appear
+  useEffect(() => {
+    if (!user || messages.length === 0) return;
+    const otherMsgIds = messages
+      .filter((m) => m.sender_id !== user.id)
+      .map((m) => m.id);
+    if (otherMsgIds.length > 0) {
+      markAsRead(otherMsgIds);
+    }
+  }, [messages, user, markAsRead]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -146,9 +161,18 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
                     >
                       {msg.content}
                     </div>
-                    <p className={`mt-1 text-[10px] text-muted-foreground ${isOwn ? "text-right mr-1" : "ml-3"}`}>
-                      {formatMessageTime(msg.created_at)}
-                    </p>
+                    <div className={`mt-1 flex items-center gap-1 ${isOwn ? "justify-end mr-1" : "ml-3"}`}>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatMessageTime(msg.created_at)}
+                      </span>
+                      {isOwn && (
+                        isRead(msg.id, msg.sender_id) ? (
+                          <CheckCheck className="h-3.5 w-3.5 text-primary" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
