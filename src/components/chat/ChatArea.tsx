@@ -4,6 +4,7 @@ import { useMessages, sendMessage, Message, Profile } from "@/hooks/useChat";
 import { Send, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import ConversationInfoPanel from "./ConversationInfoPanel";
 
 interface ChatAreaProps {
@@ -44,6 +45,7 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const { typingUsers, handleTyping, stopTyping } = useTypingIndicator(conversationId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,6 +54,7 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
   const handleSend = async () => {
     if (!newMessage.trim() || !conversationId || !user) return;
     setSending(true);
+    stopTyping();
     try {
       await sendMessage(conversationId, user.id, newMessage);
       setNewMessage("");
@@ -155,13 +158,33 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Typing indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-6 py-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex gap-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+            </div>
+            <span>
+              {typingUsers.map((u) => u.displayName).join(", ")}{" "}
+              {typingUsers.length === 1 ? "is" : "are"} typing…
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t p-4">
         <div className="flex items-end gap-2 rounded-2xl border bg-card p-2">
           <textarea
             ref={inputRef}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
