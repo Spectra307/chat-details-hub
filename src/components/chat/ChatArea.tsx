@@ -257,9 +257,44 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         </div>
       )}
 
+      {/* File preview */}
+      {pendingFile && (
+        <div className="px-4 pt-2">
+          <div className="flex items-center gap-2 rounded-xl border bg-muted/50 p-2">
+            {pendingPreview ? (
+              <img src={pendingPreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+              </div>
+            )}
+            <span className="flex-1 truncate text-sm text-foreground">{pendingFile.name}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearPendingFile}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t p-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
+          onChange={handleFileSelect}
+        />
         <div className="flex items-end gap-2 rounded-2xl border bg-card p-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-xl"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
           <textarea
             ref={inputRef}
             value={newMessage}
@@ -275,11 +310,15 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
           />
           <Button
             onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !pendingFile) || sending}
             size="icon"
             className="h-9 w-9 shrink-0 rounded-xl"
           >
-            <Send className="h-4 w-4" />
+            {uploading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
