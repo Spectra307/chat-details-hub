@@ -32,6 +32,9 @@ export interface Message {
   content: string;
   message_type: string;
   created_at: string;
+  file_url?: string | null;
+  file_name?: string | null;
+  file_type?: string | null;
   sender?: Profile;
 }
 
@@ -205,16 +208,35 @@ export function useMessages(conversationId: string | null) {
   return { messages, loading, refetch: fetchMessages };
 }
 
-export async function sendMessage(conversationId: string, senderId: string, content: string) {
+export async function sendMessage(
+  conversationId: string,
+  senderId: string,
+  content: string,
+  file?: { url: string; name: string; type: string }
+) {
   const { error } = await supabase.from("messages").insert({
     conversation_id: conversationId,
     sender_id: senderId,
-    content: content.trim(),
+    content: content.trim() || (file ? file.name : ""),
+    message_type: file ? "file" : "text",
+    file_url: file?.url || null,
+    file_name: file?.name || null,
+    file_type: file?.type || null,
   });
   if (error) throw error;
 
-  // Update conversation updated_at
   await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+}
+
+export async function uploadChatFile(conversationId: string, userId: string, file: File) {
+  const ext = file.name.split(".").pop();
+  const path = `${userId}/${conversationId}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage.from("chat-attachments").upload(path, file);
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("chat-attachments").getPublicUrl(path);
+  return { url: data.publicUrl, name: file.name, type: file.type };
 }
 
 export async function createConversation(currentUserId: string, otherUserId: string) {
