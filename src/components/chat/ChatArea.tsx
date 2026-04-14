@@ -43,6 +43,9 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
