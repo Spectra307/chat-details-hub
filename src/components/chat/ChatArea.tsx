@@ -147,8 +147,12 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         className="flex items-center gap-3 border-b px-6 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setShowInfo((v) => !v)}
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
-          {conversationName.charAt(0).toUpperCase()}
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm overflow-hidden">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            conversationName.charAt(0).toUpperCase()
+          )}
         </div>
         <div>
           <h2 className="font-display font-semibold text-foreground">{conversationName}</h2>
