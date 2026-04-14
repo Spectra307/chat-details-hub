@@ -70,15 +70,46 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max file size is 10MB", variant: "destructive" });
+      return;
+    }
+    setPendingFile(file);
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPendingPreview(url);
+    } else {
+      setPendingPreview(null);
+    }
+    e.target.value = "";
+  };
+
+  const clearPendingFile = () => {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    setPendingFile(null);
+    setPendingPreview(null);
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !conversationId || !user) return;
+    if ((!newMessage.trim() && !pendingFile) || !conversationId || !user) return;
     setSending(true);
     stopTyping();
     try {
-      await sendMessage(conversationId, user.id, newMessage);
+      let fileData: { url: string; name: string; type: string } | undefined;
+      if (pendingFile) {
+        setUploading(true);
+        fileData = await uploadChatFile(conversationId, user.id, pendingFile);
+        setUploading(false);
+      }
+      await sendMessage(conversationId, user.id, newMessage, fileData);
       setNewMessage("");
+      clearPendingFile();
       inputRef.current?.focus();
     } catch (error: any) {
+      setUploading(false);
       toast({ title: "Failed to send", description: error.message, variant: "destructive" });
     } finally {
       setSending(false);
