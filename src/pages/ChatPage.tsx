@@ -6,7 +6,7 @@ import ChatArea from "@/components/chat/ChatArea";
 
 export default function ChatPage() {
   const { user } = useAuth();
-  const { conversations } = useConversations();
+  const { conversations, refetch } = useConversations();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
 
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
@@ -16,6 +16,13 @@ export default function ChatPage() {
     if (selectedConv.is_group && selectedConv.name) return selectedConv.name;
     const other = selectedConv.members?.find((m) => m.user_id !== user?.id);
     return other?.display_name || other?.username || "Unknown";
+  };
+
+  const getAvatarUrl = () => {
+    if (!selectedConv) return null;
+    if (selectedConv.is_group) return selectedConv.avatar_url;
+    const other = selectedConv.members?.find((m) => m.user_id !== user?.id);
+    return other?.avatar_url || null;
   };
 
   return (
@@ -30,6 +37,8 @@ export default function ChatPage() {
         conversationName={getConversationName()}
         isGroup={selectedConv?.is_group || false}
         members={selectedConv?.members || []}
+        avatarUrl={getAvatarUrl()}
+        onRefresh={refetch}
       />
     </div>
   );

@@ -13,6 +13,8 @@ interface ChatAreaProps {
   conversationName: string;
   isGroup: boolean;
   members?: Profile[];
+  avatarUrl?: string | null;
+  onRefresh?: () => void;
 }
 
 function formatMessageTime(dateStr: string): string {
@@ -37,7 +39,7 @@ function shouldShowDateDivider(messages: Message[], index: number): boolean {
   return curr !== prev;
 }
 
-export default function ChatArea({ conversationId, conversationName, isGroup, members = [] }: ChatAreaProps) {
+export default function ChatArea({ conversationId, conversationName, isGroup, members = [], avatarUrl, onRefresh }: ChatAreaProps) {
   const { user } = useAuth();
   const { messages, loading } = useMessages(conversationId);
   const [newMessage, setNewMessage] = useState("");
@@ -145,8 +147,12 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         className="flex items-center gap-3 border-b px-6 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setShowInfo((v) => !v)}
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
-          {conversationName.charAt(0).toUpperCase()}
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm overflow-hidden">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            conversationName.charAt(0).toUpperCase()
+          )}
         </div>
         <div>
           <h2 className="font-display font-semibold text-foreground">{conversationName}</h2>
@@ -330,7 +336,10 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
           isGroup={isGroup}
           members={isGroup ? members : members.filter((m) => m.user_id !== user?.id)}
           otherUserEmail={!isGroup ? members.find((m) => m.user_id !== user?.id)?.email || undefined : undefined}
+          conversationId={conversationId || undefined}
+          avatarUrl={avatarUrl}
           onClose={() => setShowInfo(false)}
+          onAvatarUpdated={onRefresh}
         />
       )}
     </div>
