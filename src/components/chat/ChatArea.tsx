@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMessages, sendMessage, Message, Profile } from "@/hooks/useChat";
-import { Send, Check, CheckCheck } from "lucide-react";
+import { useMessages, sendMessage, uploadChatFile, Message, Profile } from "@/hooks/useChat";
+import { Send, Check, CheckCheck, Paperclip, X, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -43,8 +43,12 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { typingUsers, handleTyping, stopTyping } = useTypingIndicator(conversationId);
 
@@ -66,15 +70,46 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max file size is 10MB", variant: "destructive" });
+      return;
+    }
+    setPendingFile(file);
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPendingPreview(url);
+    } else {
+      setPendingPreview(null);
+    }
+    e.target.value = "";
+  };
+
+  const clearPendingFile = () => {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    setPendingFile(null);
+    setPendingPreview(null);
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !conversationId || !user) return;
+    if ((!newMessage.trim() && !pendingFile) || !conversationId || !user) return;
     setSending(true);
     stopTyping();
     try {
-      await sendMessage(conversationId, user.id, newMessage);
+      let fileData: { url: string; name: string; type: string } | undefined;
+      if (pendingFile) {
+        setUploading(true);
+        fileData = await uploadChatFile(conversationId, user.id, pendingFile);
+        setUploading(false);
+      }
+      await sendMessage(conversationId, user.id, newMessage, fileData);
       setNewMessage("");
+      clearPendingFile();
       inputRef.current?.focus();
     } catch (error: any) {
+      setUploading(false);
       toast({ title: "Failed to send", description: error.message, variant: "destructive" });
     } finally {
       setSending(false);
@@ -159,7 +194,30 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
                           : "bg-chat-other text-chat-other-foreground rounded-bl-md"
                       }`}
                     >
-                      {msg.content}
+                      {msg.file_url && msg.file_type?.startsWith("image/") ? (
+                        <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={msg.file_url}
+                            alt={msg.file_name || "Image"}
+                            className="max-w-[260px] rounded-xl mb-1"
+                            loading="lazy"
+                          />
+                        </a>
+                      ) : msg.file_url ? (
+                        <a
+                          href={msg.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 py-1"
+                        >
+                          <FileText className="h-5 w-5 shrink-0" />
+                          <span className="truncate underline">{msg.file_name || "File"}</span>
+                          <Download className="h-4 w-4 shrink-0 ml-auto" />
+                        </a>
+                      ) : null}
+                      {msg.content && !(msg.file_url && msg.content === msg.file_name) && (
+                        <span>{msg.content}</span>
+                      )}
                     </div>
                     <div className={`mt-1 flex items-center gap-1 ${isOwn ? "justify-end mr-1" : "ml-3"}`}>
                       <span className="text-[10px] text-muted-foreground">
@@ -199,9 +257,44 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         </div>
       )}
 
+      {/* File preview */}
+      {pendingFile && (
+        <div className="px-4 pt-2">
+          <div className="flex items-center gap-2 rounded-xl border bg-muted/50 p-2">
+            {pendingPreview ? (
+              <img src={pendingPreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+              </div>
+            )}
+            <span className="flex-1 truncate text-sm text-foreground">{pendingFile.name}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearPendingFile}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t p-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
+          onChange={handleFileSelect}
+        />
         <div className="flex items-end gap-2 rounded-2xl border bg-card p-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-xl"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
           <textarea
             ref={inputRef}
             value={newMessage}
@@ -217,11 +310,15 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
           />
           <Button
             onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !pendingFile) || sending}
             size="icon"
             className="h-9 w-9 shrink-0 rounded-xl"
           >
-            <Send className="h-4 w-4" />
+            {uploading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
