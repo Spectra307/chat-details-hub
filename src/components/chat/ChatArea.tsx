@@ -13,6 +13,8 @@ interface ChatAreaProps {
   conversationName: string;
   isGroup: boolean;
   members?: Profile[];
+  avatarUrl?: string | null;
+  onRefresh?: () => void;
 }
 
 function formatMessageTime(dateStr: string): string {
@@ -37,7 +39,7 @@ function shouldShowDateDivider(messages: Message[], index: number): boolean {
   return curr !== prev;
 }
 
-export default function ChatArea({ conversationId, conversationName, isGroup, members = [] }: ChatAreaProps) {
+export default function ChatArea({ conversationId, conversationName, isGroup, members = [], avatarUrl, onRefresh }: ChatAreaProps) {
   const { user } = useAuth();
   const { messages, loading } = useMessages(conversationId);
   const [newMessage, setNewMessage] = useState("");
@@ -330,7 +332,10 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
           isGroup={isGroup}
           members={isGroup ? members : members.filter((m) => m.user_id !== user?.id)}
           otherUserEmail={!isGroup ? members.find((m) => m.user_id !== user?.id)?.email || undefined : undefined}
+          conversationId={conversationId || undefined}
+          avatarUrl={avatarUrl}
           onClose={() => setShowInfo(false)}
+          onAvatarUpdated={onRefresh}
         />
       )}
     </div>
