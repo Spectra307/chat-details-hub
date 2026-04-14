@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMessages, sendMessage, Message, Profile } from "@/hooks/useChat";
-import { Send, Check, CheckCheck } from "lucide-react";
+import { useMessages, sendMessage, uploadChatFile, Message, Profile } from "@/hooks/useChat";
+import { Send, Check, CheckCheck, Paperclip, X, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
