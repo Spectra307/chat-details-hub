@@ -194,7 +194,30 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
                           : "bg-chat-other text-chat-other-foreground rounded-bl-md"
                       }`}
                     >
-                      {msg.content}
+                      {msg.file_url && msg.file_type?.startsWith("image/") ? (
+                        <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={msg.file_url}
+                            alt={msg.file_name || "Image"}
+                            className="max-w-[260px] rounded-xl mb-1"
+                            loading="lazy"
+                          />
+                        </a>
+                      ) : msg.file_url ? (
+                        <a
+                          href={msg.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 py-1"
+                        >
+                          <FileText className="h-5 w-5 shrink-0" />
+                          <span className="truncate underline">{msg.file_name || "File"}</span>
+                          <Download className="h-4 w-4 shrink-0 ml-auto" />
+                        </a>
+                      ) : null}
+                      {msg.content && !(msg.file_url && msg.content === msg.file_name) && (
+                        <span>{msg.content}</span>
+                      )}
                     </div>
                     <div className={`mt-1 flex items-center gap-1 ${isOwn ? "justify-end mr-1" : "ml-3"}`}>
                       <span className="text-[10px] text-muted-foreground">
