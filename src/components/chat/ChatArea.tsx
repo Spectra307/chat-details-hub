@@ -48,6 +48,7 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { typingUsers, handleTyping, stopTyping } = useTypingIndicator(conversationId);
 
