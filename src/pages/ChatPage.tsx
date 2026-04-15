@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useChat";
+import { usePresence } from "@/hooks/usePresence";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 
 export default function ChatPage() {
+  usePresence();
   const { user } = useAuth();
   const { conversations, refetch } = useConversations();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);

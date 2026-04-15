@@ -1,13 +1,12 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations, Conversation, Profile } from "@/hooks/useChat";
 import { useProfile } from "@/hooks/useChat";
-import { Search, Plus, LogOut, MessageCircle, Users, Camera } from "lucide-react";
-import { useState, useRef } from "react";
+import { Search, Plus, LogOut, MessageCircle, Users } from "lucide-react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import NewChatDialog from "./NewChatDialog";
+import AvatarDialog from "./AvatarDialog";
 
 interface ChatSidebarProps {
   selectedConversation: string | null;
@@ -54,41 +53,10 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
   const { conversations, loading } = useConversations();
   const [search, setSearch] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
 
-  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please select an image", variant: "destructive" });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 5MB", variant: "destructive" });
-      return;
-    }
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("user_id", user.id);
-      setLocalAvatar(urlData.publicUrl);
-      toast({ title: "Profile picture updated!" });
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
-  };
-
-  const currentAvatar = localAvatar || profile?.avatar_url;
+  const currentAvatar = localAvatar || profile?.avatar_url || null;
 
   const filtered = conversations.filter((c) => {
     if (!search) return true;
@@ -98,14 +66,6 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
 
   return (
     <div className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground">
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept="image/*"
-        onChange={handleProfilePicUpload}
-      />
-
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-5">
         <div className="flex items-center gap-2">
@@ -162,7 +122,7 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
                     : "text-sidebar-foreground/80 hover:bg-sidebar-muted/50"
                 }`}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent font-semibold text-sm overflow-hidden">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent font-semibold text-sm overflow-hidden">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                   ) : conv.is_group ? (
@@ -170,6 +130,13 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
                   ) : (
                     avatarInitial
                   )}
+                  {!conv.is_group && (() => {
+                    const otherMember = conv.members?.find((m) => m.user_id !== user?.id);
+                    const isOnline = otherMember?.status === "online";
+                    return (
+                      <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-sidebar ${isOnline ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+                    );
+                  })()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
@@ -196,21 +163,14 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
       <div className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3">
           <div
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-primary-foreground font-semibold text-sm cursor-pointer group overflow-hidden"
-            onClick={() => fileInputRef.current?.click()}
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-primary-foreground font-semibold text-sm cursor-pointer overflow-hidden"
+            onClick={() => setShowAvatarDialog(true)}
           >
             {currentAvatar ? (
               <img src={currentAvatar} alt="" className="h-full w-full object-cover" />
             ) : (
               profile?.display_name?.charAt(0).toUpperCase() || profile?.username?.charAt(0).toUpperCase() || "?"
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-              {uploading ? (
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <Camera className="h-3.5 w-3.5 text-white" />
-              )}
-            </div>
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{profile?.display_name || profile?.username}</p>
@@ -226,6 +186,15 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
           </Button>
         </div>
       </div>
+
+      <AvatarDialog
+        open={showAvatarDialog}
+        onOpenChange={setShowAvatarDialog}
+        avatarUrl={currentAvatar}
+        type="profile"
+        displayName={profile?.display_name || profile?.username || "You"}
+        onAvatarUpdated={(url) => setLocalAvatar(url)}
+      />
 
       <NewChatDialog
         open={showNewChat}

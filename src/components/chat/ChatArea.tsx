@@ -156,7 +156,18 @@ export default function ChatArea({ conversationId, conversationName, isGroup, me
         </div>
         <div>
           <h2 className="font-display font-semibold text-foreground">{conversationName}</h2>
-          {isGroup && <p className="text-xs text-muted-foreground">Group chat</p>}
+          {isGroup ? (
+            <p className="text-xs text-muted-foreground">Group chat</p>
+          ) : (() => {
+            const other = members.find((m) => m.user_id !== user?.id);
+            const isOnline = other?.status === "online";
+            return (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className={`inline-block h-2 w-2 rounded-full ${isOnline ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+                {isOnline ? "Online" : "Offline"}
+              </p>
+            );
+          })()}
         </div>
       </div>
 
