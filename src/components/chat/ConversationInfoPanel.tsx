@@ -108,6 +108,15 @@ export default function ConversationInfoPanel({
           {members[0] && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
+                <span className={`h-3 w-3 rounded-full ${members[0].status === "online" ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {members[0].status === "online" ? "Online" : "Offline"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Email</p>
