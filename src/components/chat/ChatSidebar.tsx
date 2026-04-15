@@ -122,7 +122,7 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
                     : "text-sidebar-foreground/80 hover:bg-sidebar-muted/50"
                 }`}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent font-semibold text-sm overflow-hidden">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent font-semibold text-sm overflow-hidden">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                   ) : conv.is_group ? (
@@ -130,6 +130,13 @@ export default function ChatSidebar({ selectedConversation, onSelectConversation
                   ) : (
                     avatarInitial
                   )}
+                  {!conv.is_group && (() => {
+                    const otherMember = conv.members?.find((m) => m.user_id !== user?.id);
+                    const isOnline = otherMember?.status === "online";
+                    return (
+                      <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-sidebar ${isOnline ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+                    );
+                  })()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
